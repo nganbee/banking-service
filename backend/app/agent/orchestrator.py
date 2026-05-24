@@ -84,9 +84,53 @@ class BankingAgentOrchestrator:
             state.metadata["final_decision"] = "escalate_to_human"
 
         final_text = self.format_final_response(state)
-
         state.metadata["display_response"] = final_text
 
         return state
+
+    def stream_run(self, customer_message: str):
+        """
+        Streaming version of the orchestrator run. Yields progress updates.
+        """
+        import uuid
+        state = AgentState(
+            request_id=str(uuid.uuid4()),
+            customer_message=customer_message
+        )
+        
+        try:
+            yield {"status": "running", "node": "Intent Detection"}
+            state = intent_node(state)
+
+            yield {"status": "running", "node": "Priority Detection"}
+            state = priority_node(state)
+
+            yield {"status": "running", "node": "Policy Retrieval"}
+            state = policy_node(state)
+
+            yield {"status": "running", "node": "Response Drafting"}
+            state = draft_node(state)
+
+            yield {"status": "running", "node": "Validation"}
+            state = validation_node(state)
+
+            yield {"status": "running", "node": "Routing"}
+            state = router_node(state)
+
+        except Exception as e:
+            error_msg = f"Pipeline failed at some point: {str(e)}"
+            state.trace.append(f"ERROR: {error_msg}")
+            state.metadata["final_decision"] = "escalate_to_human"
+
+        final_text = self.format_final_response(state)
+        state.metadata["display_response"] = final_text
+
+        yield {
+            "status": "completed",
+            "request_id": state.request_id,
+            "response": final_text,
+            "decision": state.metadata.get("final_decision", "unknown"),
+            "trace": state.trace
+        }
 
 orchestrator = BankingAgentOrchestrator()

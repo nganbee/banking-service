@@ -18,7 +18,7 @@ class GrpcIntentClient:
         try:
             request = intent_service_pb2.IntentRequest(message=message)
 
-            response = self.stub.IntentRecognizer(request, timeout=10.0)
+            response = self.stub.IntentRecognizer(request, timeout=300.0)
             
             return response.intent, response.confidence, response.reason
             
