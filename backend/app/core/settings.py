@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 from pathlib import Path
 
-_BASE_DIR = Path(__file__).resolve().parent.parent.parent
+_BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 class Settings(BaseSettings):
     # Ollama Configuration
@@ -23,5 +23,8 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = _BASE_DIR / ".env"
+        env_file_encoding = "utf-8"
+        # Env vars from Docker/OS always take priority over .env file
+        extra = "allow"
         
 settings = Settings()
