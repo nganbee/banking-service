@@ -4,23 +4,38 @@ from app.agent.orchestrator import orchestrator
 
 app = FastAPI(title="Banking Agent API")
 
-class ChatRequest(BaseModel):
+class RunAgentRequest(BaseModel):
     message: str
 
-@app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+@app.get("/health")
+async def health_check():
+    """Kiểm tra xem hệ thống có đang hoạt động hay không."""
+    return {"status": "running", "message": "API Gateway is healthy"}
+
+@app.get("/config")
+async def get_config():
+    """Trả về cấu hình hệ thống hiện tại."""
+    # Bạn có thể điều chỉnh cấu hình này dựa trên biến môi trường (env) thực tế
+    return {
+        "status": "success",
+        "config": {
+            "llm_service": "ollama",
+            "intent_service": "grpc",
+        }
+    }
+
+@app.post("/run-agent")
+async def run_agent_endpoint(request: RunAgentRequest):
+    """Thực thi toàn bộ agentic workflow."""
     try:
+        # Gọi orchestrator điều phối luồng xử lý
         state = orchestrator.run(request.message)
         
+        # Trả về kết quả đầu ra có cấu trúc cuối cùng
         return {
             "request_id": state.request_id,
             "response": state.metadata.get("display_response"),
             "decision": state.metadata.get("final_decision"),
-            # "intent": state.intent_data.get("intent")
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/")
-async def health_check():
-    return {"status": "running"}
