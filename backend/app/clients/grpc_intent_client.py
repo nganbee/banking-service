@@ -3,10 +3,12 @@ from typing import Tuple
 
 from app.clients.intent_grpc import intent_service_pb2
 from app.clients.intent_grpc import intent_service_pb2_grpc
+import os
 
 class GrpcIntentClient:
-    def __init__(self, host: str = "localhost", port: int = 50051):
-        # Open channel to gRPC server
+    def __init__(self, host: str = None, port: int = 50051):
+        host = host or os.getenv("INTENT_SERVICE_HOST", "localhost")
+        port = int(os.getenv("INTENT_SERVICE_PORT", str(port)))
         self.channel = grpc.insecure_channel(f"{host}:{port}")
         # Create stub
         self.stub = intent_service_pb2_grpc.IntentServiceStub(self.channel)
