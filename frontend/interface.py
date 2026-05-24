@@ -123,28 +123,43 @@ def inject_custom_css():
 def init_session_state():
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hello! I am your AI Banking Assistant. How can I help you today?", "decision": None}
+            {"role": "assistant", "content": "Hello! I am your AI Banking Assistant. How can I help you today?", "decision": None, "trace": []}
         ]
 
 # ==========================================
-# API INTERACTION
+# API INTERACTION (STREAMING)
 # ==========================================
-def call_backend_api(message: str):
-    API_URL = "http://localhost:8000/run-agent"
+def call_backend_stream(message: str, status_container):
+    API_URL = "http://localhost:8000/stream-agent"
     
     try:
         response = requests.post(
             API_URL,
             json={"message": message},
-            timeout=120 # Đợi model generate lâu
+            stream=True,
+            timeout=120
         )
         response.raise_for_status()
-        data = response.json()
-        return data.get("response", "No response from agent."), data.get("decision", "unknown")
+        
+        for line in response.iter_lines():
+            if line:
+                decoded_line = line.decode('utf-8')
+                if decoded_line.startswith("data: "):
+                    data_str = decoded_line[6:]
+                    data = json.loads(data_str)
+                    
+                    if data.get("status") == "running":
+                        status_container.update(label=f"Running: **{data['node']}**...", state="running")
+                    
+                    elif data.get("status") == "completed":
+                        return data.get("response", "No response"), data.get("decision", "unknown"), data.get("trace", [])
+                        
+        return "**Error:** Stream ended unexpectedly.", "error", []
+        
     except requests.exceptions.ConnectionError:
-        return "🚨 **Error:** Could not connect to the Backend API. Make sure it is running on port 8000.", "error"
+        return "**Error:** Could not connect to the Backend API. Make sure it is running on port 8000.", "error", []
     except Exception as e:
-        return f"🚨 **Error:** {str(e)}", "error"
+        return f"**Error:** {str(e)}", "error", []
 
 # ==========================================
 # MAIN APP LAYOUT
@@ -164,35 +179,53 @@ def main():
     # Display Chat History
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
+            if msg.get("trace"):
+                with st.status("Agent Execution Nodes", state="complete"):
+                    for step in msg["trace"]:
+                        st.markdown(f"- {step}")
+            
             st.markdown(msg["content"])
             
             # Display decision
-            if msg.get("decision"):
+            if msg.get("decision") and msg.get("decision") != "unknown":
                 st.markdown(f'<div class="decision-badge">Route: {msg["decision"]}</div>', unsafe_allow_html=True)
 
     # Chat Input
     if prompt := st.chat_input("Type your message here... (e.g., 'I lost my credit card')"):
         
-        # Display user input
-        st.session_state.messages.append({"role": "user", "content": prompt, "decision": None})
+        # 1. Display User Message
+        st.session_state.messages.append({"role": "user", "content": prompt, "decision": None, "trace": []})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Call api and display response
+        # 2. Call API & Display Agent Message (Streaming)
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing and generating response..."):
-                response_text, decision = call_backend_api(prompt)
-                
-                st.markdown(response_text)
-                if decision and decision != "unknown":
-                    st.markdown(f'<div class="decision-badge">Route: {decision}</div>', unsafe_allow_html=True)
-                
-                # Save state
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": response_text, 
-                    "decision": decision
-                })
+            # Initialize Status Spinner
+            status_container = st.status("Starting Agentic Workflow...", expanded=True)
+            
+            # Run streaming function
+            response_text, decision, trace = call_backend_stream(prompt, status_container)
+            
+            # After execution, update spinner label and show details
+            if trace:
+                status_container.update(label="Agent Execution Nodes", state="complete")
+                for step in trace:
+                    status_container.markdown(f"- {step}")
+            else:
+                status_container.update(label="Execution Error", state="error")
+                        
+            st.markdown(response_text)
+            
+            if decision and decision != "unknown":
+                st.markdown(f'<div class="decision-badge">Route: {decision}</div>', unsafe_allow_html=True)
+            
+            # Save state
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": response_text, 
+                "decision": decision,
+                "trace": trace
+            })
 
 if __name__ == "__main__":
     main()
