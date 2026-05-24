@@ -35,7 +35,6 @@ class IntentClassification:
         return cleaned_text
 
     def _map_to_known_label(self, prediction):
-        # Giữ nguyên logic map nhãn cũ của Ngân để đảm bảo độ chính xác
         normalized_prediction = self._normalize_intent_label(prediction)
         if normalized_prediction in self.norm_map:
             return self.norm_map[normalized_prediction]
