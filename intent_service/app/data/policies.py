@@ -74,6 +74,11 @@ POLICIES_DATABASE = {
         "bank declined the transaction for security reasons. Try using a different "
         "payment method or contact your external bank."
     ),
+    "change_pin": (
+        "To change your PIN, please enter your current 6-digit PIN, followed by "
+        "your new PIN. For security reasons, you will be asked to re-enter your "
+        "new PIN to confirm. This change will take effect immediately."
+    ),
     
     # Default
     "general_policy": (
