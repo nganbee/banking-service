@@ -1,0 +1,13 @@
+pandas
+numpy
+pydantic
+pydantic-settings
+python-dotenv
+requests
+pathlib
+uvicorn
+fastapi
+requests
+streamlit
+grpcio
+grpcio-tools
