@@ -84,3 +84,8 @@ To stop the system, run:
 ```bash
 docker-compose down
 ```
+
+## Video Demonstration
+You can view a comprehensive walkthrough of the system, including the node-by-node decision-making process, at the link below:  
+
+[Watch video demo here](https://drive.google.com/file/d/18i41dQV0dqi01_V1zLTgt6wMO8nee9MU/view?usp=sharing)
