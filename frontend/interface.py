@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import os
 
 # ==========================================
 # CONFIGURATION & PAGE SETUP
@@ -130,7 +131,8 @@ def init_session_state():
 # API INTERACTION (STREAMING)
 # ==========================================
 def call_backend_stream(message: str, status_container):
-    API_URL = "http://localhost:8000/stream-agent"
+    _base = os.getenv("API_BASE_URL", "http://localhost:8000")
+    API_URL = f"{_base}/stream-agent"
     
     try:
         response = requests.post(
