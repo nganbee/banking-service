@@ -6,6 +6,10 @@ This project implements an intelligent, agent-based customer service system for 
 
 ## Microservice Architecture
 
+
+![alt text](image.png)
+
+
 The system is designed following a modern microservice approach, decoupled into three distinct services that work together to form the "Agentic Workflow". 
 
 ### 1. API Gateway (Backend)
